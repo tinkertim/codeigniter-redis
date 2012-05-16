@@ -262,16 +262,10 @@ class Redis {
 		
 		// Get the amount of bits to be read
 		$value_length = (int) fgets($this->_connection);
+		if ($value_length <= 0) return NULL;
 		
-		if ($value_length == -1)
-		{
-			return NULL;
-		}
-		
-		$response = fgets($this->_connection, $value_length + 1);
-
-		// Get rid of the \n\r
-		fgets($this->_connection);		
+		$response = rtrim(fread($this->_connection, $value_length + 1));
+		fgets($this->_connection);			// Get rid of the \n\r
 				
 		return isset($response) ? $response : FALSE;
 		
@@ -349,6 +343,29 @@ class Redis {
 			}
 		}
 		return $request;
+	}
+	
+	/**
+	 * Info
+	 *
+	 * Overrides the default Redis response,
+	 * so we return a nice array instead of a nasty string.
+	 * @return 	array
+	 */
+	public function info()
+	{
+		$response = $this->command('INFO');
+		$data = array();
+		$lines = explode("\r\n", $response);
+
+		// Extract the key and value
+		foreach ($lines as $line)
+		{
+			$parts = explode(':', $line);
+			$data[$parts[0]] = $parts[1];
+		}
+		
+		return $data;
 	}
 		
 	/**
